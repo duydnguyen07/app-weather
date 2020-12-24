@@ -1,6 +1,6 @@
 {
     "/weather/*": {
-        "target": "http://api.openweathermap.org/data/2.5/weather",
+        "target": "http://api.openweathermap.org/data/2.5",
         "secure": false,
         "logLevel": "debug"
     }
