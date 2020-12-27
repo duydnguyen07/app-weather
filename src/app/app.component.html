@@ -3,9 +3,9 @@
 
 <div class="well">
   <h2>Enter a zipcode:</h2>
-  <input class="form-control" placeholder="Zipcode" type="text" id="addLocation">
+  <input class="form-control" placeholder="Zipcode" type="text" id="addLocation" [formControl]="zipCodeControl">
   <br>
-  <button class="btn btn-primary" id="addLocationBtn">
+  <button (click)="addLocation()" [disabled]="!zipCodeControl.valid" class="btn btn-primary" id="addLocationBtn">
     Add location
   </button>
 </div>

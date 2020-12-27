@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, Inject } from "@angular/core";
-import { LOCAL_STORAGE, StorageService } from "ngx-webstorage-service";
 import { WeatherService } from './core/weather.service';
+import { FormControl, Validators } from '@angular/forms';
 
 @Component({
   selector: "my-app",
@@ -11,10 +11,17 @@ import { WeatherService } from './core/weather.service';
 export class AppComponent {
   name = "Angular";
 
+  zipCodeControl: FormControl = new FormControl('', [Validators.required]);
+
   constructor(
-    @Inject(LOCAL_STORAGE) private storage: StorageService,
     private weatherService: WeatherService
   ) {
-    this.weatherService.getWeatherByZipCode('95122').subscribe(m => console.log(m))
+    //TODO: refactor UI components into their own compo
+    this.weatherService.getWeatherReports().subscribe(res => console.log(res))
+  }
+
+  addLocation() {
+    this.weatherService.addNewZipCode(this.zipCodeControl.value);
+    this.zipCodeControl.reset()
   }
 }
