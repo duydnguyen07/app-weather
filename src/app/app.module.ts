@@ -3,10 +3,13 @@ import { BrowserModule } from "@angular/platform-browser";
 import { FormsModule } from "@angular/forms";
 
 import { AppComponent } from "./app.component";
-import { HelloComponent } from "./hello.component";
 import { StorageServiceModule } from "ngx-webstorage-service";
 import { HttpClientModule } from "@angular/common/http";
 import { ReactiveFormsModule } from '@angular/forms';
+import { WeatherReportComponent } from './home/weather-report/weather-report.component';
+import { WeatherIconUrlPipe } from './shared/weather-icon-url.pipe';
+import { HomeComponent } from './home/home.component';
+import { AppRoutingModule } from './app-routing.module';
 
 @NgModule({
   imports: [
@@ -14,9 +17,16 @@ import { ReactiveFormsModule } from '@angular/forms';
     FormsModule, 
     StorageServiceModule, 
     HttpClientModule,
+    AppRoutingModule,
+    ReactiveFormsModule,
     ReactiveFormsModule
   ],
-  declarations: [AppComponent, HelloComponent],
+  declarations: [
+    AppComponent, 
+    WeatherReportComponent, 
+    WeatherIconUrlPipe, 
+    HomeComponent
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule {}

@@ -54,7 +54,10 @@ export class WeatherService {
    constructor(
       @Inject(LOCAL_STORAGE) private storage: StorageService,
       private httpClient: HttpClient
-   ) { }
+   ) { 
+      //TODO: get zips from localSotage
+      //TODO: if exist load them
+   }
 
    getWeatherByZipCode(
       code: string,
