@@ -13,6 +13,7 @@
     "@angular/router": "^11.0.5",
     "bootstrap": "^3.4.1",
     "core-js": "^3.6.5",
+    "lodash": "^4.17.20",
     "ngx-webstorage-service": "^4.1.0",
     "popper.js": "^1.16.0",
     "rxjs": "^6.5.5",

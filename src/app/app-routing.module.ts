@@ -5,7 +5,7 @@ import { HomeComponent } from './home/home.component';
 
 const routes: Routes = [
   {
-    path: 'forecast/:zipcode',
+    path: 'forecast/:zipCode',
     loadChildren: () => import('./forecast/forecast.module').then(m => m.ForecastModule)
   },
   {

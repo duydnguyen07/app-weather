@@ -1,8 +1,9 @@
 import { Injectable, Inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, of, from, Subject } from 'rxjs';
 import { LOCAL_STORAGE, StorageService, StorageDecoder, StorageEncoder } from "ngx-webstorage-service";
-import { first, catchError } from 'rxjs/operators';
+import { first, catchError, mergeMap, takeUntil, map, finalize } from 'rxjs/operators';
+import compact from 'lodash/compact';
 
 export interface WeatherDto {
    cod: 404 | 200,
@@ -22,7 +23,7 @@ export interface WeatherDto {
 }
 
 export interface WeatherReport extends WeatherDto {
-   zipcode: string
+   zipCode: string
 }
 
 @Injectable({ 
@@ -33,8 +34,8 @@ export class WeatherService {
    private UNIT = 'imperial';
    private STORAGE_KEY = 'weather-app';
    private storageEncoder: StorageEncoder<string[]> = {
-      encode: (zipcodes: string[]): string => {
-         return JSON.stringify(zipcodes)
+      encode: (zipCodes: string[]): string => {
+         return JSON.stringify(zipCodes)
       }
    }
 
@@ -48,44 +49,43 @@ export class WeatherService {
       }
    }
 
-   private zipcodes: string[] = this.storage.get(this.STORAGE_KEY, this.storageDecoder) || [];
+   private zipCodes: string[] = this.storage.get(this.STORAGE_KEY, this.storageDecoder) || [];
    private weatherReports$: BehaviorSubject<WeatherReport[]> = new BehaviorSubject([]);
+   private zipCodeGetError$: BehaviorSubject<string> = new BehaviorSubject('');
 
    constructor(
       @Inject(LOCAL_STORAGE) private storage: StorageService,
       private httpClient: HttpClient
    ) { 
-      //TODO: get zips from localSotage
-      //TODO: if exist load them
+      this.loadReports(this.zipCodes)
    }
 
    getWeatherByZipCode(
       code: string,
       country: string = "us"
-   ): Observable<WeatherDto> {
+   ): Observable<WeatherReport> {
       const params = this.getBaseParams().set("zip", `${code},${country}`);
 
-      return this.httpClient.get<WeatherDto>("/weather/", { params });
+      return this.httpClient.get<WeatherReport>("/weather/", { params }).pipe(
+         map( response => ({...response, zipCode: code}) ),
+         catchError((errRes: HttpErrorResponse) => of(errRes.error))
+      );
    }
 
-   addNewZipCode(zipcode: string) {
-      // zipcode is truthy and has not been added before
-      if(zipcode && this.zipcodes.indexOf(zipcode) === -1) {
-         this.getWeatherByZipCode(zipcode).pipe(
-            first(),
-            catchError((errRes: HttpErrorResponse) => of(errRes.error))
-         ).subscribe((response: WeatherDto) => {
+   addNewZipCode(zipCode: string) {
+      // zipCode is truthy and has not been added before
+      if(zipCode && this.zipCodes.indexOf(zipCode) === -1) {
+         this.getWeatherByZipCode(zipCode).pipe(
+            first()
+         ).subscribe((response: WeatherReport) => {
             if(response?.cod === 200) {
-               const newReports = this.weatherReports$.value.concat({
-                  ...response,
-                  zipcode
-               })
+               const newReports = this.weatherReports$.value.concat(response)
 
                this.weatherReports$.next(newReports)
-               this.zipcodes.push(zipcode);
-               this.storage.set<string[]>(this.STORAGE_KEY, this.zipcodes, this.storageEncoder);
-            } else if (response?.cod === 404) {
-               //TODO: handle 404 error
+               this.zipCodes.push(zipCode);
+               this.storage.set<string[]>(this.STORAGE_KEY, this.zipCodes, this.storageEncoder);
+            } else if (response?.cod == 404) {
+               this.zipCodeGetError$.next(response.message)
             } else {
                console.error('Unknown response: ', response)
             }
@@ -95,13 +95,17 @@ export class WeatherService {
       }
    }
 
-   removeZipCode(zipcode: string) {
-      const currentZipcodeIndex: number = this.zipcodes.indexOf(zipcode);
+   removeZipCode(zipCode: string) {
+      const currentZipcodeIndex: number = this.zipCodes.indexOf(zipCode);
 
-      if(zipcode && currentZipcodeIndex > -1) {
-         this.zipcodes.splice(currentZipcodeIndex, 1);
-         this.storage.set<string[]>(this.STORAGE_KEY, this.zipcodes, this.storageEncoder);
-         //TODO: remove from weather reports object
+      if(zipCode && currentZipcodeIndex > -1) {
+         this.zipCodes.splice(currentZipcodeIndex, 1);
+         this.storage.set<string[]>(this.STORAGE_KEY, this.zipCodes, this.storageEncoder);
+
+         // Filter the report matching the passed-in zipCode from the reports array
+         this.weatherReports$.next(
+            this.weatherReports$.value.filter((report: WeatherReport) => report.zipCode !== zipCode)
+         )
       } else {
          console.log('Zipcode is not already saved, doing nothing')
       }
@@ -109,6 +113,40 @@ export class WeatherService {
 
    getWeatherReports(): Observable<WeatherReport[]> {
       return this.weatherReports$.asObservable();
+   }
+
+   getZipCodeGetError(): Observable<string> {
+      return this.zipCodeGetError$.asObservable();
+   }
+
+   private loadReports(zipCodes: string[]) {
+      if(zipCodes?.length > 0) {
+         let subSubject = new Subject();
+
+         from(zipCodes).pipe(
+            mergeMap((zipCode) => this.getWeatherByZipCode(zipCode)),
+            finalize(() => { subSubject.complete() }),
+            takeUntil(subSubject)
+         ).subscribe((report: WeatherReport) => {
+            if(report?.cod === 200) {
+               const indexOfResponse = zipCodes.indexOf(report.zipCode);
+               const newReports = [];
+
+               // Rearrange reports to the same index as the zipCodes array
+               this.weatherReports$.value.forEach((report) => {
+                  newReports[zipCodes.indexOf(report.zipCode)] = report
+               })
+
+               newReports[indexOfResponse] = report;
+
+               this.weatherReports$.next(compact(newReports))
+            } else if (report?.cod === 404) {
+               console.error('Failed to load report for', report.zipCode)
+            } else {
+               console.error('Unknown response: ', report)
+            }
+         })
+      }
    }
 
    private getBaseParams(): HttpParams {

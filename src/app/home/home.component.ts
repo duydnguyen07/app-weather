@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, Validators } from '@angular/forms';
-import { WeatherService } from '../core/weather.service';
+import { WeatherService, WeatherReport } from '../core/weather.service';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-home',
@@ -10,15 +11,8 @@ import { WeatherService } from '../core/weather.service';
 })
 export class HomeComponent implements OnInit {
   zipCodeControl: FormControl = new FormControl('', [Validators.required]);
-  
-  weatherReport = {
-    zipCode: "95122",
-    locationName: "San Jose",
-    condition: "Clear",
-    currentTemp: "65",
-    maxTemp: "85",
-    minTemp: "55",
-  }
+  weatherReports$: Observable<WeatherReport[]> = this.weatherService.getWeatherReports();
+  zipCodeGetError$: Observable<string> = this.weatherService.getZipCodeGetError();
   
   constructor(
     private weatherService: WeatherService
@@ -28,12 +22,11 @@ export class HomeComponent implements OnInit {
   }
 
   deleteZipcode(zipCode: string) {
-    console.log('TODO: Delete zipcode', zipCode);
+    this.weatherService.removeZipCode(zipCode);
   }
 
   addLocation() {
     this.weatherService.addNewZipCode(this.zipCodeControl.value);
     this.zipCodeControl.reset()
-    // this.weatherService.getWeatherByZipCode('95122').subscribe(m => console.log(m))
   }
 }
