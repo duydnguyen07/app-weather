@@ -1,0 +1,19 @@
+<div class="well flex">
+    <div>
+      <h3>{{locationName}} ({{zipCode}})</h3>
+      <h4>Current conditions: {{condition}}</h4>
+      <h4>Temperatures today:</h4>
+      <p>
+        Current {{currentTemp}}
+        - Max {{maxTemp}}
+        - Min {{minTemp}}
+      </p>
+      <p>
+        <a [routerLink]="['/forecast', zipCode]">TODO: Show 5-day forecast for Rancho Cordova</a>
+      </p>
+    </div>
+    <div>
+      <span class="close" (click)="deleteEvent.emit(zipCode)">×</span>
+      <img [src]="condition | weatherIconUrl">
+    </div>
+</div>
