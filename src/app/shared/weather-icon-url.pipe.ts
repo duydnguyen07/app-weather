@@ -7,7 +7,6 @@ import { ILLUSTRATIONS } from '../app.model';
 export class WeatherIconUrlPipe implements PipeTransform {
 
   transform(condition: string): string {
-    console.log(condition)
     if(condition === "Clear") {
       return ILLUSTRATIONS.sun;
     } else if (

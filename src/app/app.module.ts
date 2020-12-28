@@ -7,7 +7,7 @@ import { StorageServiceModule } from "ngx-webstorage-service";
 import { HttpClientModule } from "@angular/common/http";
 import { ReactiveFormsModule } from '@angular/forms';
 import { WeatherReportComponent } from './home/weather-report/weather-report.component';
-import { WeatherIconUrlPipe } from './shared/weather-icon-url.pipe';
+import { SharedModule } from './shared/shared.module';
 import { HomeComponent } from './home/home.component';
 import { AppRoutingModule } from './app-routing.module';
 
@@ -19,12 +19,12 @@ import { AppRoutingModule } from './app-routing.module';
     HttpClientModule,
     AppRoutingModule,
     ReactiveFormsModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    SharedModule
   ],
   declarations: [
     AppComponent, 
     WeatherReportComponent, 
-    WeatherIconUrlPipe, 
     HomeComponent
   ],
   bootstrap: [AppComponent]

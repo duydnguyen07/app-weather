@@ -1,48 +1,21 @@
-<div class="container-fluid">
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h3 class="panel-title">5-day forecast for {{locationName}}</h3>
+<ng-container *ngIf="{forecastData: forcastData$ | async} as data">
+  <div class="container-fluid">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">5-day forecast for {{data.forecastData?.city?.name}}</h3>
 
+      </div>
+      <ul *ngIf="data.forecastData?.cod === '200'" class="list-group">
+        <li *ngFor="let item of data.forecastData?.list" class="list-group-item">
+          {{item?.dt * 1000 | date:'EEEE, LLL d'}}:
+          {{item?.weather[0]?.main}}
+          - Min: {{item?.temp?.min | number:'1.0-0' }}
+          - Max: {{item?.temp?.max | number:'1.0-0' }}
+
+          <img class="icon" [src]="item?.weather[0]?.main | weatherIconUrl">
+        </li>
+      </ul>
     </div>
-    <ul class="list-group">
-      <li class="list-group-item">
-        Monday, Mar 23:
-        Rain
-        - Min: 45
-        - Max: 59
-
-        <img class="icon" src="https://www.angulartraining.com/images/weather/rain.png">
-      </li>
-      <li class="list-group-item">
-        Tuesday, Mar 24:
-        Rain
-        - Min: 39
-        - Max: 52
-
-        <img class="icon" src="https://www.angulartraining.com/images/weather/sun.png">
-      </li><li class="list-group-item">
-        Wednesday, Mar 25:
-        Rain
-        - Min: 36
-        - Max: 54
-
-        <img class="icon" src="https://www.angulartraining.com/images/weather/rain.png">
-      </li><li class="list-group-item">
-        Thursday, Mar 26:
-        Clear
-        - Min: 37
-        - Max: 56
-
-        <img class="icon" src="https://www.angulartraining.com/images/weather/clouds.png">
-      </li><li class="list-group-item">
-        Friday, Mar 27:
-        Clear
-        - Min: 40
-        - Max: 57
-
-        <img class="icon" src="https://www.angulartraining.com/images/weather/snow.png">
-      </li>
-    </ul>
+    <button class="btn btn-success" tabindex="0" id="mainPageBtn" [routerLink]="['/']">&lt; Back to main page</button>
   </div>
-  <button class="btn btn-success" tabindex="0" id="mainPageBtn" [routerLink]="['/']">&lt; Back to main page</button>
-</div>
+</ng-container>

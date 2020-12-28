@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, Validators } from '@angular/forms';
-import { WeatherService, WeatherReport } from '../core/weather.service';
+import { WeatherService } from '../core/weather.service';
+import { WeatherReport } from "../core/weather.model";
 import { Observable } from 'rxjs';
 
 @Component({

@@ -1,7 +1,8 @@
 {
-    "/weather/*": {
+    "/api/*": {
         "target": "http://api.openweathermap.org/data/2.5",
         "secure": false,
-        "logLevel": "debug"
+        "logLevel": "debug",
+        "pathRewrite": {"^/api" : ""}
     }
-}
+} 

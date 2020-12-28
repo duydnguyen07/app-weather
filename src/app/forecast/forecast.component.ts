@@ -1,4 +1,8 @@
 import { Component, OnInit, Input, ChangeDetectionStrategy } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { ForecastDto, WeatherDto } from '../core/weather.dto';
+import { Observable, of } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-forecast',
@@ -7,12 +11,16 @@ import { Component, OnInit, Input, ChangeDetectionStrategy } from '@angular/core
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ForecastComponent implements OnInit {
-  @Input()
-  locationName: string;
+  forcastData$: Observable<ForecastDto>
 
-  constructor() { }
+  constructor(private route: ActivatedRoute) { }
 
   ngOnInit(): void {
+    this.forcastData$ = this.route.data.pipe(
+      switchMap(
+        (resolved: {forecastData: ForecastDto}) => of(resolved.forecastData)
+      )
+    )
   }
 
 }

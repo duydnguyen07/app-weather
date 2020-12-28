@@ -4,27 +4,7 @@ import { BehaviorSubject, Observable, of, from, Subject } from 'rxjs';
 import { LOCAL_STORAGE, StorageService, StorageDecoder, StorageEncoder } from "ngx-webstorage-service";
 import { first, catchError, mergeMap, takeUntil, map, finalize } from 'rxjs/operators';
 import compact from 'lodash/compact';
-
-export interface WeatherDto {
-   cod: 404 | 200,
-   message? : string,
-   weather: [
-      {
-         id: number,
-         main: string,
-      }
-   ],
-   main: {
-      temp: number,
-      temp_min: number,
-      temp_max: number
-   },
-   name: string,
-}
-
-export interface WeatherReport extends WeatherDto {
-   zipCode: string
-}
+import { WeatherReport } from './weather.model';
 
 @Injectable({ 
   providedIn: 'root'
@@ -66,7 +46,21 @@ export class WeatherService {
    ): Observable<WeatherReport> {
       const params = this.getBaseParams().set("zip", `${code},${country}`);
 
-      return this.httpClient.get<WeatherReport>("/weather/", { params }).pipe(
+      return this.httpClient.get<WeatherReport>("/api/weather/", { params }).pipe(
+         map( response => ({...response, zipCode: code}) ),
+         catchError((errRes: HttpErrorResponse) => of(errRes.error))
+      );
+   }
+
+   getForecastByZipCode(
+      code: string,
+      country: string = "us"
+   ) {
+      const params = this.getBaseParams()
+                        .set("zip", `${code},${country}`)
+                        .set("cnt", "5");
+
+      return this.httpClient.get<WeatherReport>("/api/forecast/daily", { params }).pipe(
          map( response => ({...response, zipCode: code}) ),
          catchError((errRes: HttpErrorResponse) => of(errRes.error))
       );
