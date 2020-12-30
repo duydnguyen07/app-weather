@@ -1,3 +1,4 @@
-# ng-certification-noxata
+# App Weather
 
-[Edit on StackBlitz ⚡️](https://stackblitz.com/edit/ng-certification-noxata)
+This app allows user to type in a US zipcode to get the weather of that location. Additionally they can also see a 5 day forecast
+
