@@ -30,4 +30,8 @@ export class HomeComponent implements OnInit {
     this.weatherService.addNewZipCode(this.zipCodeControl.value);
     this.zipCodeControl.reset()
   }
+
+  reportZipCode(_, report: WeatherReport) {
+    return report?.zipCode;
+  }
 }

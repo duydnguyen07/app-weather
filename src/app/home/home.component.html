@@ -8,7 +8,7 @@
       </button>
       <span>{{zipCodeGetError$ | async}}</span>
     </div>
-    <app-weather-report *ngFor="let report of weatherReports$ | async as list; trackBy: report?.zipCode"
+    <app-weather-report *ngFor="let report of weatherReports$ | async as list; trackBy: reportZipCode"
       [zipCode]="report.zipCode"
       [locationName]="report.name"
       [condition]="report.weather[0]?.main"
