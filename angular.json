@@ -30,7 +30,7 @@
           },
           "configurations": {
             "production": {
-              "baseHref": "weather-app",
+              "baseHref": "/weather-app/",
               "optimization": true,
               "outputHashing": "all",
               "sourceMap": false,
