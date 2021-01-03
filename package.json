@@ -26,7 +26,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build --prod",
-    "build:docker": "docker build -t duydnguyen07/weather-app:latest .",
+    "build:docker": "docker build -t duydnguyen07/weather-app:${npm_package_version} .",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e"

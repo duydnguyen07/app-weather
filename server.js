@@ -4,18 +4,22 @@ const app = express(),
       bodyParser = require("body-parser");
       port = 3080;
 
-const users = [];
+const BASE_PATH = "/weather-app"
 
 app.use(bodyParser.json());
-app.use(express.static(process.cwd()+"/dist/demo/"));
+app.use(BASE_PATH, express.static(process.cwd()+"/dist/demo/"));
 
-app.use('/api', createProxyMiddleware({ 
+const pathRewriteKey = `^${BASE_PATH}/api`
+const rewriteConfigObj = {} 
+rewriteConfigObj[pathRewriteKey] = ""
+
+app.use(BASE_PATH + '/api', createProxyMiddleware({ 
     target: 'http://api.openweathermap.org/data/2.5', 
     changeOrigin: true,
-    pathRewrite: {"^/api" : ""}
+    pathRewrite: rewriteConfigObj
 }));
 
-app.get('/', (req,res) => {
+app.get(BASE_PATH + '/', (req,res) => {
   res.sendFile(process.cwd()+"/dist/demo/index.html")
 });
 
