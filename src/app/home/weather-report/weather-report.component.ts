@@ -30,7 +30,7 @@ export class WeatherReportComponent implements OnInit {
   minTemp: string;
 
   @Output()
-  deleteEvent: EventEmitter<string> = new EventEmitter();
+  deleteEvent: EventEmitter<number> = new EventEmitter();
 
   constructor() { 
   }
