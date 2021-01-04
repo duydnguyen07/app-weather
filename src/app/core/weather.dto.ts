@@ -14,6 +14,11 @@ export interface WeatherDto {
       temp_max: number;
    };
    dt: number;
+   id: number;
+   coord: { 
+      lon: number, 
+      lat: number
+   }
    name: string;
 }
 

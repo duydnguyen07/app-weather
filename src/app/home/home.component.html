@@ -1,9 +1,9 @@
 <div class="container-fluid">
     <div class="well">
-      <h2>Enter a zipCode:</h2>
-      <input class="form-control" placeholder="Zipcode" type="text" id="addLocation" [formControl]="zipCodeControl">
+      <h2>Enter a city:</h2>
+      <input class="form-control" placeholder="City" type="text" [formControl]="cityControl">
       <br>
-      <button (click)="addLocation()" [disabled]="!zipCodeControl.valid" class="btn btn-primary" id="addLocationBtn">
+      <button (click)="addLocation()" [disabled]="!cityControl.valid" class="btn btn-primary">
         Add location
       </button>
       <span>{{zipCodeGetError$ | async}}</span>
