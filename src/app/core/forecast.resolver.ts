@@ -16,6 +16,6 @@ export class ForecastResolver implements Resolve<ForecastDto> {
   constructor(private weatherService: WeatherService) {}
 
   resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Observable<ForecastDto> {
-    return this.weatherService.getForecastByZipCode(route.params.zipCode)
+    return this.weatherService.getForecastByCityId(route.params.cityId)
   }
 }

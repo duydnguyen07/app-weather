@@ -1,10 +1,9 @@
 import { Injectable, Inject } from '@angular/core';
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams, HttpResponse } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, from, Subject } from 'rxjs';
 import { LOCAL_STORAGE, StorageService, StorageDecoder, StorageEncoder } from "ngx-webstorage-service";
-import { first, catchError, mergeMap, takeUntil, map, finalize } from 'rxjs/operators';
+import { first, catchError, mergeMap, takeUntil, tap, finalize } from 'rxjs/operators';
 import compact from 'lodash/compact';
-import { WeatherReport } from './weather.model';
 import { WeatherDto } from './weather.dto';
 
 @Injectable({ 
@@ -14,14 +13,14 @@ export class WeatherService {
    private IP_KEY = '5a4b2d457ecbef9eb2a71e480b947604';
    private UNIT = 'imperial';
    private STORAGE_KEY = 'duyng-com-weather-app';
-   private storageEncoder: StorageEncoder<string[]> = {
-      encode: (keys: string[]): string => {
+   private storageEncoder: StorageEncoder<number[]> = {
+      encode: (keys: number[]): string => {
          return JSON.stringify(keys)
       }
    }
 
-   private storageDecoder: StorageDecoder<string[]> = {
-      decode: (value: string): string[] => {
+   private storageDecoder: StorageDecoder<number[]> = {
+      decode: (value: string): number[] => {
          try {
             return JSON.parse(value);
          } catch (e) {
@@ -30,9 +29,11 @@ export class WeatherService {
       }
    }
 
-   private cityIds: string[] = this.storage.get(this.STORAGE_KEY, this.storageDecoder) || [];
-   private weatherReports$: BehaviorSubject<WeatherReport[]> = new BehaviorSubject([]);
+   private cityIds: number[] = this.storage.get(this.STORAGE_KEY, this.storageDecoder) || [];
+   private weatherReports$: BehaviorSubject<WeatherDto[]> = new BehaviorSubject([]);
    private zipCodeGetError$: BehaviorSubject<string> = new BehaviorSubject('');
+   private requestSuccess$: BehaviorSubject<boolean> = new BehaviorSubject(false);
+   private latLonResCache = new WeakMap<{lat: string, lon: string}, WeatherDto>();
 
    constructor(
       @Inject(LOCAL_STORAGE) private storage: StorageService,
@@ -41,11 +42,15 @@ export class WeatherService {
       this.loadReports(this.cityIds);
    }
 
+   getRequestSuccess() {
+      return this.requestSuccess$.asObservable();
+   }
+
    getWeatherByCityId(
-      id: string
+      id: number
    ): Observable<WeatherDto> {
       const params = this.getBaseParams()
-                           .set("id", id);
+                           .set("id", id + '');
 
       return this.httpClient.get<WeatherDto>("/api/weather/", { params }).pipe(
          catchError((errRes: HttpErrorResponse) => of(errRes.error))
@@ -59,8 +64,11 @@ export class WeatherService {
       const params = this.getBaseParams()
                            .set("lat", lat)
                            .set("lon", lon);
-
+                           
       return this.httpClient.get<WeatherDto>("/api/weather/", { params }).pipe(
+         tap((response) => {
+            this.latLonResCache.set({lat, lon}, response)
+         }),
          catchError((errRes: HttpErrorResponse) => of(errRes.error))
       );
    }
@@ -68,70 +76,65 @@ export class WeatherService {
    getWeatherByZipCode(
       code: string,
       country: string = "us"
-   ): Observable<WeatherReport> {
+   ): Observable<WeatherDto> {
       const params = this.getBaseParams().set("zip", `${code},${country}`);
 
-      return this.httpClient.get<WeatherReport>("/api/weather/", { params }).pipe(
-         map( response => ({...response, zipCode: code}) ),
+      return this.httpClient.get<WeatherDto>("/api/weather/", { params }).pipe(
          catchError((errRes: HttpErrorResponse) => of(errRes.error))
       );
    }
 
-   getForecastByZipCode(
-      code: string,
-      country: string = "us"
+   getForecastByCityId(
+      id: number
    ) {
       const params = this.getBaseParams()
-                        .set("zip", `${code},${country}`)
+                        .set("id", `${id}`)
                         .set("cnt", "5");
 
-      return this.httpClient.get<WeatherReport>("/api/forecast/daily", { params }).pipe(
-         map( response => ({...response, zipCode: code}) ),
+      return this.httpClient.get<WeatherDto>("/api/forecast/daily", { params }).pipe(
          catchError((errRes: HttpErrorResponse) => of(errRes.error))
       );
    }
 
-   addNewCity(cityId: string) {
-      // zipCode is truthy and has not been added before
-      if(cityId && this.cityIds.indexOf(cityId) === -1) {
-         this.getWeatherByCityId(cityId).pipe(
-            first(),
-            finalize(() => this.zipCodeGetError$.next(''))
-         ).subscribe((response: WeatherReport) => {
-            if(response?.cod === 200) {
-               const newReports = this.weatherReports$.value.concat(response)
+   addNewCity(cityId: number| WeatherDto) {
+      let id = (typeof cityId === "number") ? cityId : cityId['id'];
 
-               this.weatherReports$.next(newReports)
-               this.cityIds.push(cityId);
-               this.storage.set<string[]>(this.STORAGE_KEY, this.cityIds, this.storageEncoder);
-            } else if (response?.cod == 404) {
-               this.zipCodeGetError$.next(response.message)
-            } else {
-               console.error('Unknown response: ', response)
-            }
-         })
+      // zipCode is truthy and has not been added before
+      if(cityId && this.cityIds.indexOf(id) === -1) {
+         if(typeof cityId === "number") {
+            this.requestSuccess$.next(false);
+            this.getWeatherByCityId(id).pipe(
+               first(),
+               finalize(() => {
+                  this.zipCodeGetError$.next('')
+               })
+            ).subscribe(this.addNewCityHandler(id))
+         } else {
+            // Skip requesting and set the value immediately
+            this.addNewCityHandler(id)(cityId);
+         }
       } else {
          console.log('Zipcode is either invalid or already exist, doing nothing.')
       }
    }
 
-   removeZipCode(cityId: string) {
+   removeLocation(cityId: number) {
       const currentZipcodeIndex: number = this.cityIds.indexOf(cityId);
 
       if(cityId && currentZipcodeIndex > -1) {
          this.cityIds.splice(currentZipcodeIndex, 1);
-         this.storage.set<string[]>(this.STORAGE_KEY, this.cityIds, this.storageEncoder);
+         this.storage.set<number[]>(this.STORAGE_KEY, this.cityIds, this.storageEncoder);
 
          // Filter the report matching the passed-in zipCode from the reports array
          this.weatherReports$.next(
-            this.weatherReports$.value.filter((report: WeatherReport) => report.name !== cityId)
+            this.weatherReports$.value.filter((report: WeatherDto) => report.id !== cityId)
          )
       } else {
          console.log('Zipcode is not already saved, doing nothing')
       }
    }
 
-   getWeatherReports(): Observable<WeatherReport[]> {
+   getWeatherReports(): Observable<WeatherDto[]> {
       return this.weatherReports$.asObservable();
    }
 
@@ -139,7 +142,25 @@ export class WeatherService {
       return this.zipCodeGetError$.asObservable();
    }
 
-   private loadReports(cityIds: string[]) {
+   private addNewCityHandler(id: number) {
+      return (response: WeatherDto) => {
+         if(response?.cod === 200) {
+            const newReports = [...this.weatherReports$.value];
+            newReports.unshift(response);
+
+            this.weatherReports$.next(newReports)
+            this.cityIds.unshift(id);
+            this.storage.set<number[]>(this.STORAGE_KEY, this.cityIds, this.storageEncoder);
+            this.requestSuccess$.next(true);
+         } else if (response?.cod == 404) {
+            this.zipCodeGetError$.next(response.message)
+         } else {
+            console.error('Unknown response: ', response)
+         }
+      }
+   }
+
+   private loadReports(cityIds: number[]) {
       if(cityIds?.length > 0) {
          let subSubject = new Subject();
 
@@ -147,21 +168,24 @@ export class WeatherService {
             mergeMap((id) => this.getWeatherByCityId(id)),
             finalize(() => { subSubject.complete() }),
             takeUntil(subSubject)
-         ).subscribe((report: WeatherReport) => {
+         ).subscribe((report: WeatherDto) => {
             if(report?.cod === 200) {
-               const indexOfResponse = cityIds.indexOf(report.zipCode);
+
+               console.log(cityIds)
+
+               const indexOfResponse = cityIds.indexOf(report.id);
                const newReports = [];
 
                // Rearrange reports to the same index as the zipCodes array
                this.weatherReports$.value.forEach((report) => {
-                  newReports[cityIds.indexOf(report.zipCode)] = report
+                  newReports[cityIds.indexOf(report.id)] = report
                })
 
                newReports[indexOfResponse] = report;
 
                this.weatherReports$.next(compact(newReports))
             } else if (report?.cod === 404) {
-               console.error('Failed to load report for', report.zipCode)
+               console.error('Failed to load report for', report.id)
             } else {
                console.error('Unknown response: ', report)
             }

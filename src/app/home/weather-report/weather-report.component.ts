@@ -9,6 +9,9 @@ import { EventEmitter } from '@angular/core';
 })
 export class WeatherReportComponent implements OnInit {
   @Input()
+  id: number
+
+  @Input()
   zipCode: string;
 
   @Input()

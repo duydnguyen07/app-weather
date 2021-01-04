@@ -25,7 +25,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
     ReactiveFormsModule,
     ReactiveFormsModule,
     SharedModule,
-    TypeaheadModule.forRoot()
+    TypeaheadModule.forRoot(),
   ],
   declarations: [
     AppComponent, 

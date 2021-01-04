@@ -28,9 +28,5 @@ export class HomeService {
 
   getSuggestions(text: string): Fuzzysort.KeyResults<City> {
     return fuzzysort.go<City>(text, this.cityList$.value, {key: "name"})
-    
-    // res.forEach((keyResult: Fuzzysort.KeyResult<City>) => {
-    //   console.log(fuzzysort.highlight(keyResult));
-    // })
   }
 }

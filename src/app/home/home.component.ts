@@ -1,11 +1,11 @@
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild, AfterViewInit, ElementRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, AfterViewInit } from '@angular/core';
 import { FormControl, Validators } from '@angular/forms';
 import { WeatherService } from '../core/weather.service';
-import { WeatherReport } from "../core/weather.model";
-import { BehaviorSubject, fromEvent, Observable, of } from 'rxjs';
-import { distinctUntilChanged, map, debounceTime, tap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { map, first, finalize } from 'rxjs/operators';
 import { HomeService, City } from './home.service';
-import { TypeaheadDirective, TypeaheadMatch } from 'ngx-bootstrap/typeahead';
+import { TypeaheadMatch } from 'ngx-bootstrap/typeahead';
+import { WeatherDto } from '../core/weather.dto';
 
 @Component({
   selector: 'app-home',
@@ -15,30 +15,20 @@ import { TypeaheadDirective, TypeaheadMatch } from 'ngx-bootstrap/typeahead';
 })
 export class HomeComponent implements OnInit, AfterViewInit {
   cityControl: FormControl = new FormControl('', [Validators.required]);
-  weatherReports$: Observable<WeatherReport[]> = this.weatherService.getWeatherReports();
+  weatherReports$: Observable<WeatherDto[]> = this.weatherService.getWeatherReports();
   zipCodeGetError$: Observable<string> = this.weatherService.getZipCodeGetError();
   typeAheadSuggestions$: Observable<Fuzzysort.KeyResult<City>[]> = new BehaviorSubject([])
+  requestSuccess$: Observable<boolean> = this.weatherService.getRequestSuccess();
+  addingCurrentLocation$: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
-  // @ViewChild("cityInput")
-  // cityInput: ElementRef;
+  currentMatch: TypeaheadMatch;
 
   constructor(
     private weatherService: WeatherService,
-    private cdr: ChangeDetectorRef,
     private homeService: HomeService
   ) { }
 
   ngOnInit() {
-    this.getLocation((lat, lon) => {
-        this.weatherService.getWeatherByLatLon(lat, lon).subscribe((report: WeatherReport) => {
-          // Set value of control if user has not filled it out yet
-          if(!this.cityControl.value) {
-            this.cityControl.setValue(report.name)
-            this.cdr.detectChanges();
-          }
-        })
-    });
-
     this.typeAheadSuggestions$ = of(this.cityControl.value).pipe(
       map(() => {
         let data = this.homeService.getSuggestions(this.cityControl.value)
@@ -50,24 +40,53 @@ export class HomeComponent implements OnInit, AfterViewInit {
         return trimmedResult
       })
     )
+
+    this.requestSuccess$.subscribe((isSuccess: boolean) => {
+      if(isSuccess) {
+        this.currentMatch = null;
+        this.cityControl.reset();
+      }
+    })
   }
 
   ngAfterViewInit() {
   }
 
-  deleteCity(id: string) {
-    this.weatherService.removeZipCode(id);
+  addCurrentLocation() {
+    this.addingCurrentLocation$.next(true)
+    this.getLocation((lat, lon) => {
+      this.weatherService.getWeatherByLatLon(lat, lon).pipe(
+        first(),
+        finalize(() => { 
+          this.addingCurrentLocation$.next(false) 
+        })
+      ).subscribe((report: WeatherDto) => {
+        // Set value of control if user has not filled it out yet
+        if(!this.cityControl.value) {
+          this.currentMatch = new TypeaheadMatch({obj: report}, '');
+          this.weatherService.addNewCity(report)
+        }
+      })
+    });
   }
 
-  addLocation(match: TypeaheadMatch) {
-    console.log(match)
-    //TODO: fetch weather based on match
-    // this.weatherService.addNewZipCode(this.zipCodeControl.value);
-    // this.zipCodeControl.reset()
+  deleteCity(id: number) {
+    this.weatherService.removeLocation(id);
   }
 
-  reportZipCode(_, report: WeatherReport) {
-    return report?.zipCode;
+  addLocation() {
+    if(!!this.currentMatch) {
+      this.weatherService.addNewCity(this.currentMatch.item.obj.id)
+    }
+  }
+
+  setLocationAndFetch(match: TypeaheadMatch) {
+    this.currentMatch = match;
+    this.weatherService.addNewCity(match.item.obj.id)
+  }
+
+  reportId(_, report: WeatherDto) {
+    return report?.id;
   }
 
   private getLocation(successCB) {

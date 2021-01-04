@@ -1,6 +1,7 @@
 <div class="container-fluid">
     <div class="well">
       <h2>Enter a city:</h2>
+      <h6>(Your cities will be stored for the next time you visit again!)</h6>
       <input 
         #cityInput 
         class="form-control" 
@@ -10,15 +11,28 @@
         [typeahead]="typeAheadSuggestions$"
         [typeaheadAsync]="true"
         typeaheadOptionField="obj.name"
-        (typeaheadOnSelect)="addLocation($event)"
+        (typeaheadOnSelect)="setLocationAndFetch($event)"
       >
       <br>
-      <button (click)="addLocation()" [disabled]="!cityControl.valid" class="btn btn-primary">
+      <button
+        (click)="addCurrentLocation()"
+        class="btn btn-primary"
+        [disabled]="!!(addingCurrentLocation$ | async)"
+      >
+        Add my current location
+      </button>
+      <button 
+        (click)="addLocation()" 
+        [disabled]="!cityControl.valid || !currentMatch" 
+        class="btn btn-primary"
+      >
         Add location
       </button>
-      <span>{{zipCodeGetError$ | async}}</span>
+      <div>{{zipCodeGetError$ | async}}</div>
     </div>
-    <app-weather-report *ngFor="let report of weatherReports$ | async as list; trackBy: reportZipCode"
+
+    <app-weather-report *ngFor="let report of weatherReports$ | async as list; trackBy: reportId"
+      [id]="report.id"
       [zipCode]="report.zipCode"
       [locationName]="report.name"
       [condition]="report.weather[0]?.main"
