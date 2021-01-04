@@ -6,7 +6,7 @@ import { ForecastResolver } from './core/forecast.resolver';
 
 const routes: Routes = [
   {
-    path: 'forecast/:zipCode',
+    path: 'forecast/:cityId',
     loadChildren: () => import('./forecast/forecast.module').then(m => m.ForecastModule),
     resolve: {
       forecastData: ForecastResolver

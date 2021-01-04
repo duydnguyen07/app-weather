@@ -11,10 +11,12 @@ import { HomeComponent } from './home/home.component';
 import { AppRoutingModule } from './app-routing.module';
 import { ApiPrefixInterceptor } from './core/api-prefix.interceptor';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
-
+import { TypeaheadModule } from 'ngx-bootstrap/typeahead';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 @NgModule({
   imports: [
+    BrowserAnimationsModule,
     BrowserModule, 
     FormsModule, 
     StorageServiceModule, 
@@ -22,7 +24,8 @@ import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
     AppRoutingModule,
     ReactiveFormsModule,
     ReactiveFormsModule,
-    SharedModule
+    SharedModule,
+    TypeaheadModule.forRoot(),
   ],
   declarations: [
     AppComponent, 
