@@ -1,7 +1,17 @@
 <div class="container-fluid">
     <div class="well">
       <h2>Enter a city:</h2>
-      <input class="form-control" placeholder="City" type="text" [formControl]="cityControl">
+      <input 
+        #cityInput 
+        class="form-control" 
+        placeholder="City" 
+        type="text" 
+        [formControl]="cityControl"
+        [typeahead]="typeAheadSuggestions$"
+        [typeaheadAsync]="true"
+        typeaheadOptionField="obj.name"
+        (typeaheadOnSelect)="addLocation($event)"
+      >
       <br>
       <button (click)="addLocation()" [disabled]="!cityControl.valid" class="btn btn-primary">
         Add location
@@ -15,6 +25,6 @@
       [currentTemp]="report.main?.temp"
       [maxTemp]="report.main?.temp_max"
       [minTemp]="report.main?.temp_min"
-      (deleteEvent)="deleteZipcode($event)"
+      (deleteEvent)="deleteCity($event)"
     ></app-weather-report>
 </div>

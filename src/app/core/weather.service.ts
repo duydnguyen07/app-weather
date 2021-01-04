@@ -39,10 +39,6 @@ export class WeatherService {
       private httpClient: HttpClient
    ) { 
       this.loadReports(this.cityIds);
-
-      this.httpClient.get("/assets/city.list.min.json").subscribe((d) => {
-         console.log(d)
-      })
    }
 
    getWeatherByCityId(
